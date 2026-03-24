@@ -1,3 +1,6 @@
+import sys
+import os
+
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, \
     BotCommand, MenuButtonCommands, BotCommandScopeChat, MenuButtonDefault
 from telegram import Update
@@ -35,18 +38,21 @@ async def send_html(update: Update, context: ContextTypes.DEFAULT_TYPE,
 
 
 # надсилає в чат текстове повідомлення, та додає до нього кнопки
-async def send_text_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE,
-                            text: str, buttons: dict) -> Message:
-    text = text.encode('utf16', errors='surrogatepass').decode('utf16')
+async def send_text_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE, text: str, buttons: dict):
     keyboard = []
     for key, value in buttons.items():
         button = InlineKeyboardButton(str(value), callback_data=str(key))
         keyboard.append([button])
     reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Определяем chat_id
+    chat_id = update.effective_chat.id
+
     return await context.bot.send_message(
-        update.effective_message.chat_id,
-        text=text, reply_markup=reply_markup,
-        message_thread_id=update.effective_message.message_thread_id)
+        chat_id=chat_id,
+        text=text,
+        reply_markup=reply_markup
+    )
 
 
 # надсилає в чат фото

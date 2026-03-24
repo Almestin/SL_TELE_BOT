@@ -13,7 +13,7 @@ class ChatGptService:
     def __init__(self, token):
         # token = "sk-proj-" + token[:3:-1] if token.startswith('gpt:') else token
         self.client = AsyncOpenAI(api_key=token)
-        # http_client=httpx.Client(proxy="http://18.199.183.77:49232"),
+             # http_client=httpx.Client(proxy="http://18.199.183.77:49232"),
 
         self.message_list = []
 
@@ -54,11 +54,11 @@ class ChatGptService:
         file_info = await photo_file.get_file()
         image_bytes = await file_info.download_as_bytearray()
 
-
+        # 2. Кодуємо зображення в Base64
         image_base64 = base64.b64encode(image_bytes).decode('utf-8')
 
-
-        messages_to_AI = [
+        # 3. Формуємо спеціальний запит для моделі з підтримкою Vision
+        messages = [
             {
                 "role": "user",
                 "content": [
@@ -73,10 +73,10 @@ class ChatGptService:
             }
         ]
 
-
+        # 4. Надсилаємо запит до OpenAI
         response = await self.client.chat.completions.create(
-            model="gpt-4o",
-            messages = messages_to_AI,
+            model="gpt-4o",  # Використовуємо актуальну модель з Vision
+            messages=messages,
             max_tokens=500
         )
 
