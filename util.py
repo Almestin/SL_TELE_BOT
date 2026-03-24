@@ -45,7 +45,6 @@ async def send_text_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE, 
         keyboard.append([button])
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # Определяем chat_id
     chat_id = update.effective_chat.id
 
     return await context.bot.send_message(

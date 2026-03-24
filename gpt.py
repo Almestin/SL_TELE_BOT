@@ -13,17 +13,16 @@ class ChatGptService:
     def __init__(self, token):
         # token = "sk-proj-" + token[:3:-1] if token.startswith('gpt:') else token
         self.client = OpenAI(api_key=token)
-             # http_client=httpx.Client(proxy="http://18.199.183.77:49232"),
+        # http_client=httpx.Client(proxy="http://18.199.183.77:49232"),
 
         self.message_list = []
-
 
     def send_message_list(self) -> str:
         completion = self.client.chat.completions.create(
             model="gpt-5-mini",
             messages=self.message_list,
             max_completion_tokens=3000,
-             # temperature=0.9
+            # temperature=0.9
         )
         message = completion.choices[0].message
         self.message_list.append(message)
@@ -35,16 +34,13 @@ class ChatGptService:
 
     async def add_message(self, message_text: str) -> str:
         self.message_list.append({"role": "user", "content": message_text})
-        return  self.send_message_list()
+        return self.send_message_list()
 
     async def send_question(self, prompt_text: str, message_text: str):
-
-
         self.set_prompt(prompt_text)
         return await self.add_message(message_text)
 
     async def send_photo(self, photo_file):
-
         file_info = await photo_file.get_file()
         image_bytes = await file_info.download_as_bytearray()
 
@@ -65,10 +61,9 @@ class ChatGptService:
             }
         ]
 
-
         response = self.client.chat.completions.create(
             model="gpt-4o",  # Використовуємо актуальну модель з Vision
-            messages = messages_to_AI,
+            messages=messages_to_AI,
             max_tokens=500
         )
 

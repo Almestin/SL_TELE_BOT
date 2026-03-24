@@ -7,8 +7,7 @@ from util import (load_message, send_text, send_image, show_main_menu,
                   send_text_buttons, load_prompt, default_callback_handler)
 from credentials import config
 
-
-GPT_DIALOG, PERSON_DIALOG, QUIZ_PROCESS, RECOMMEND_PROCESS, REC_GENRE, REC_CRITERIA = range(6)
+GPT_DIALOG, PERSON_DIALOG, QUIZ_DIALOG, RECOMMEND_DIALOG, REC_GENRE_DIALOG, REC_CRITERIA_DIALOG = range(6)
 
 chat_gpt = ChatGptService(config.OPENAI_TOKEN)
 
@@ -31,6 +30,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         'image': 'Розпізнавання 🖼'
     })
 
+    await send_text_buttons(update, context, load_message('main'), {
+        'random': 'Цікавий факт 🧠'
+    })
+
     return ConversationHandler.END
 
 
@@ -50,7 +53,7 @@ async def random(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
-# --- 2. ChatGPT Інтерфейс ---
+# --- 2. ChatGPT  ---
 async def gpt_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     if query: await query.answer()
@@ -92,6 +95,7 @@ async def talk_select_person(update: Update, context: ContextTypes.DEFAULT_TYPE)
     await update.effective_chat.send_action(action="typing")
 
     greeting = await chat_gpt.add_message("Привітайся зі мною у своєму унікальному стилі.")
+    await send_image(update, context, query.data)
     await send_text(update, context, greeting)
     return PERSON_DIALOG
 
@@ -103,7 +107,7 @@ async def talk_handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return PERSON_DIALOG
 
 
-# --- 4. Квіз (з пам'яттю тем та питань) ---
+# --- 4. Квіз ---
 async def quiz_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     if query: await query.answer()
@@ -118,7 +122,7 @@ async def quiz_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         'quiz_geografy': 'Географія 🌍',
         'quiz_math': 'Математика 📐'
     })
-    return QUIZ_PROCESS
+    return QUIZ_DIALOG
 
 
 async def quiz_logic(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -137,7 +141,7 @@ async def quiz_logic(update: Update, context: ContextTypes.DEFAULT_TYPE):
     question = await chat_gpt.add_message(instruction)
     context.user_data['asked_questions'].append(question)
     await send_text(update, context, question)
-    return QUIZ_PROCESS
+    return QUIZ_DIALOG
 
 
 async def quiz_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -149,7 +153,7 @@ async def quiz_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     msg = f"{result}\n\n🏆 Ваш рахунок: {context.user_data['score']}"
     await send_text_buttons(update, context, msg, {'quiz_more': 'Ще питання 🔄', 'start': 'Завершити 🏁'})
-    return QUIZ_PROCESS
+    return QUIZ_DIALOG
 
 
 # --- 5. Рекомендації ---
@@ -158,13 +162,13 @@ async def recommend_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if query: await query.answer()
 
     await send_image(update, context, 'recommend')
-    # Кнопки тепер передають чистий тип контенту
+
     await send_text_buttons(update, context, "Що саме вам порадити?", {
         'movie': 'Кіно 🎬',
         'book': 'Книги 📚',
         'music': 'Музика 🎵'
     })
-    return RECOMMEND_PROCESS
+    return RECOMMEND_DIALOG
 
 
 async def recommend_type_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -179,8 +183,8 @@ async def recommend_type_select(update: Update, context: ContextTypes.DEFAULT_TY
     type_name = names.get(query.data)
 
     await send_text(update, context,
-                    f"Чудово! Які жанри {type_name} вам подобаються? (Наприклад: фантастика, джаз, трилер)")
-    return REC_GENRE
+                    f"Які жанри {type_name} вам подобаються?")
+    return REC_GENRE_DIALOG
 
 
 async def recommend_genre_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -188,26 +192,25 @@ async def recommend_genre_select(update: Update, context: ContextTypes.DEFAULT_T
     context.user_data['rec_genre'] = update.message.text
 
     await send_text(update, context,
-                    "Зрозумів. Напишіть додаткові побажання (наприклад: 'тільки нове', 'сумні', 'для вечора з друзями' або 'немає')")
-    return REC_CRITERIA
+                    "Також напишіть додаткові побажання (наприклад: 'тільки нове', 'сумні' або 'немає')")
+    return REC_CRITERIA_DIALOG
 
 
 async def recommend_final(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # 3. Запам'ятовуємо критерії
+
     criteria = update.message.text
 
-    # Дістаємо всі збережені дані
     rec_type = context.user_data.get('rec_type')
     genre = context.user_data.get('rec_genre')
 
     await update.message.chat.send_action(action="typing")
 
-    # Формуємо комплексний запит до ChatGPT
+    # Формуємо повний запит до ChatGPT
     prompt_request = (
         f"Порадь 3 варіанти контенту типу '{rec_type}'. "
         f"Жанр: {genre}. "
         f"Додаткові критерії: {criteria}. "
-        f"Відповідь дай у форматі: Назва - Чому варто подивитись/прочитати."
+        f"Відповідь дай у форматі: Назва - Чому варто подивитись/прочитати/послухати."
     )
 
     # Встановлюємо загальний промпт експерта (можна завантажити з rec_main.txt)
@@ -217,7 +220,7 @@ async def recommend_final(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await send_text_buttons(update, context, response, {
         'recommend': 'Спробувати ще раз 🔄',
-        'start': 'В головне меню 🏠'
+        'start': 'Завершити 🏠'
     })
     return ConversationHandler.END
 
@@ -234,10 +237,8 @@ async def image_description(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Вивчаю ваше зображення... 👀")
 
     response = await chat_gpt.send_photo(update.message.photo[-1])
-    await send_text_buttons(update, context, response, {'start': 'В меню 🏠'})
+    await send_text_buttons(update, context, response, {'start': 'Завершити 🏠'})
 
-
-# --- Налаштування додатку ---
 
 app = ApplicationBuilder().token(config.BOT_TOKEN).build()
 
@@ -269,24 +270,24 @@ conv_handler = ConversationHandler(
             MessageHandler(filters.TEXT & ~filters.COMMAND, talk_handle),
             CallbackQueryHandler(start, pattern='^start$')
         ],
-        QUIZ_PROCESS: [
+        QUIZ_DIALOG: [
             CallbackQueryHandler(quiz_logic, pattern='^quiz_'),
             CallbackQueryHandler(quiz_logic, pattern='^quiz_more$'),
             MessageHandler(filters.TEXT & ~filters.COMMAND, quiz_answer),
             CallbackQueryHandler(start, pattern='^start$')
         ],
-        RECOMMEND_PROCESS: [
-            # Очікуємо натискання кнопки типу контенту
+        RECOMMEND_DIALOG: [
+            # Очікуємо вибір типу контенту
             CallbackQueryHandler(recommend_type_select, pattern='^(movie|book|music)$'),
             CallbackQueryHandler(start, pattern='^start$')
         ],
-        REC_GENRE: [
-            # Очікуємо текст жанру
+        REC_GENRE_DIALOG: [
+            # Очікуємо вибір жанру
             MessageHandler(filters.TEXT & ~filters.COMMAND, recommend_genre_select),
             CallbackQueryHandler(start, pattern='^start$')
         ],
-        REC_CRITERIA: [
-            # Очікуємо текст критеріїв і видаємо результат
+        REC_CRITERIA_DIALOG: [
+            # Очікуємо текст критеріїв
             MessageHandler(filters.TEXT & ~filters.COMMAND, recommend_final),
             CallbackQueryHandler(start, pattern='^start$')
         ],
@@ -298,5 +299,5 @@ app.add_handler(conv_handler)
 app.add_handler(MessageHandler(filters.PHOTO, image_description))
 app.add_handler(CallbackQueryHandler(default_callback_handler))
 
-print("Бот запущений і повністю справний! 🚀")
+print("Бот запущений... 🚀")
 app.run_polling()
