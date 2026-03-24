@@ -12,7 +12,7 @@ class ChatGptService:
 
     def __init__(self, token):
         # token = "sk-proj-" + token[:3:-1] if token.startswith('gpt:') else token
-        self.client = AsyncOpenAI(api_key=token)
+        self.client = OpenAI(api_key=token)
              # http_client=httpx.Client(proxy="http://18.199.183.77:49232"),
 
         self.message_list = []
@@ -66,7 +66,7 @@ class ChatGptService:
         ]
 
 
-        response = await self.client.chat.completions.create(
+        response = self.client.chat.completions.create(
             model="gpt-4o",  # Використовуємо актуальну модель з Vision
             messages = messages_to_AI,
             max_tokens=500
