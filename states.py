@@ -1,0 +1,7 @@
+# Етапи взаємодії (States)
+(GPT_DIALOG,
+ PERSON_DIALOG,
+ QUIZ_PROCESS,
+ RECOMMEND_PROCESS,
+ REC_GENRE,
+ REC_CRITERIA) = range(6)

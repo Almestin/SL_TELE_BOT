@@ -18,8 +18,6 @@ class ChatGptService:
         self.message_list = []
 
 
-
-
     def send_message_list(self) -> str:
         completion = self.client.chat.completions.create(
             model="gpt-5-mini",
@@ -46,19 +44,13 @@ class ChatGptService:
         return await self.add_message(message_text)
 
     async def send_photo(self, photo_file):
-        """
-        Приймає об'єкт фото від Telegram, конвертує в Base64
-        та надсилає в OpenAI для аналізу.
-        """
-        # 1. Завантажуємо фото з серверів Telegram в пам'ять (байтовий масив)
+
         file_info = await photo_file.get_file()
         image_bytes = await file_info.download_as_bytearray()
 
-        # 2. Кодуємо зображення в Base64
         image_base64 = base64.b64encode(image_bytes).decode('utf-8')
 
-        # 3. Формуємо спеціальний запит для моделі з підтримкою Vision
-        messages = [
+        messages_to_AI = [
             {
                 "role": "user",
                 "content": [
@@ -73,10 +65,10 @@ class ChatGptService:
             }
         ]
 
-        # 4. Надсилаємо запит до OpenAI
+
         response = await self.client.chat.completions.create(
             model="gpt-4o",  # Використовуємо актуальну модель з Vision
-            messages=messages,
+            messages = messages_to_AI,
             max_tokens=500
         )
 
